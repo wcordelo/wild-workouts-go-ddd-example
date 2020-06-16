@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net"
 	"net/http"
 
 	"github.com/ThreeDotsLabs/wild-workouts-go-ddd-example/internal/common/auth"
@@ -19,10 +20,13 @@ func (h HttpServer) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.db.UpdateLastIP(r.Context(), authUser.UUID, r.RemoteAddr)
-	if err != nil {
-		httperr.InternalError("internal-server-error", err, w, r)
-		return
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err == nil {
+		err = h.db.UpdateLastIP(r.Context(), authUser.UUID, host)
+		if err != nil {
+			httperr.InternalError("internal-server-error", err, w, r)
+			return
+		}
 	}
 
 	user, err := h.db.GetUser(r.Context(), authUser.UUID)

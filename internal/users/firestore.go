@@ -10,10 +10,10 @@ import (
 )
 
 type UserModel struct {
-	Balance     int    `json:"balance"`
-	DisplayName string `json:"displayName"`
-	Role        string `json:"role"`
-	LastIP      string `json:"lastIP"`
+	Balance     int
+	DisplayName string
+	Role        string
+	LastIP      string
 }
 
 type db struct {
@@ -77,20 +77,13 @@ func (d db) UpdateBalance(ctx context.Context, userID string, amountChange int) 
 }
 
 func (d db) UpdateLastIP(ctx context.Context, userID string, lastIP string) error {
-	return d.firestoreClient.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
-		var user UserModel
+	updates := []firestore.Update{
+		{
+			Path:  "LastIP",
+			Value: lastIP,
+		},
+	}
 
-		userDoc, err := tx.Get(d.UserDocumentRef(userID))
-		if err != nil {
-			return err
-		}
-
-		if err := userDoc.DataTo(&user); err != nil {
-			return err
-		}
-
-		user.LastIP = lastIP
-
-		return tx.Set(userDoc.Ref, user)
-	})
+	_, err := d.UserDocumentRef(userID).Update(ctx, updates)
+	return err
 }
